@@ -34,7 +34,7 @@ char *OpenCL_LoadProgramSource(const char *filename)
     return source;
 }
 
-int global = 1024, local = 16, intensity = 1;
+int global = 32, local = 8, intensity = 1;
 
 void OpenCL_ParseArguments(int argc, char** argv)
 {
@@ -62,6 +62,30 @@ void InitArrayFloat(float *Data, int Size)
         Data[i] = Scale * rand();
     }
 }
+
+void InitBinaryMaskArrayPercentile(int *Data, int Size, float percentile)
+{
+    int i;
+    float Scale = 1.0f / (float) RAND_MAX;
+    for (i = 0; i < Size; ++i)
+    {
+    	if (Scale*rand() < percentile)
+	{Data[i] = 0;} 
+	else
+	{Data[i] = 1;}
+    }
+}
+
+void InitBinaryMaskArraySkipN(int *Data, int Size, int step)
+{
+    int i;
+    for (i = 0; i < Size; ++i)
+    {
+    	if (i%step == 0) Data[i] = 0;
+	else Data[i] = 1;
+    }
+}
+
 
 void InitArrayInt(int *Data, int Size)
 {

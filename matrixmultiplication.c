@@ -19,14 +19,15 @@ OpenCL Exercise: Matrix Multiplication
 
 
 // Multiply two matrices A * B = C
-#define WA 1024
-#define HA 1024
-#define WB 1024
+#define WA 32
+#define HA 32
+#define WB 32
 #define HB WA
 #define WC WB
 #define HC HA
-
- 
+#define BLOCKSIZE 16
+#define TILESIZE 8 
+#define SKIP 4
 /////////////////////////////////////////////////////////
 // Program main
 /////////////////////////////////////////////////////////
@@ -60,7 +61,15 @@ void LaunchOpenCL()
 {
    // set seed for rand()
    srand(2012);
- 
+   
+   // 
+   unsigned int BlockSize = BLOCKSIZE;
+   unsigned int BlockNumByEdge = WA / BlockSize;
+   unsigned int BlockNum = BlockNumByEdge * BlockNumByEdge;
+   unsigned int TileSize = TILESIZE;
+   unsigned int TileNumByBlockEdge = BlockSize / TileSize;
+   unsigned int TileNumByBlock = TileNumByBlockEdge * TileNumByBlockEdge;
+
    // 1. allocate host memory for matrices A and B
    unsigned int size_A = WA * HA;
    unsigned int mem_size_A = sizeof(float) * size_A;
@@ -69,11 +78,19 @@ void LaunchOpenCL()
    unsigned int size_B = WB * HB;
    unsigned int mem_size_B = sizeof(float) * size_B;
    float* h_B = (float*) malloc(mem_size_B);
+   
+   // allocate host memory for mask matrix
+   unsigned int size_BL = BlockNum * TileNumByBlock;
+   unsigned int mem_size_BL = sizeof(int) * size_BL;
+   int* h_BL = (int*)malloc(mem_size_BL);
+
  
    // 2. initialize host memory
    InitArrayFloat(h_A, size_A);
    InitArrayFloat(h_B, size_B);
-  
+   unsigned int skipstep = SKIP;
+   InitBinaryMaskArraySkipN(h_BL, size_BL, skipstep);
+
    // 4. allocate host memory for the result C
    unsigned int size_C = WC * HC;
    unsigned int mem_size_C = sizeof(float) * size_C;
@@ -93,7 +110,8 @@ void LaunchOpenCL()
    cl_mem d_A;
    cl_mem d_B;
    cl_mem d_C;
- 
+   cl_mem d_BL;
+
    /*****************************************/
    /* Initialize OpenCL */
    /*****************************************/
@@ -120,7 +138,7 @@ void LaunchOpenCL()
    d_C = clCreateBuffer(clContext, CL_MEM_READ_WRITE, mem_size_A, NULL, &errcode);
    d_A = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &errcode);
    d_B = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &errcode);
- 
+   d_BL = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_BL, h_BL, &errcode);
    // 6. Load and build OpenCL kernel
    // Open the ptx file and load it
    // into a char* buffer
@@ -160,8 +178,12 @@ void LaunchOpenCL()
    errcode = clSetKernelArg(clKernel, 0, sizeof(cl_mem), (void *)&d_C);
    errcode |= clSetKernelArg(clKernel, 1, sizeof(cl_mem), (void *)&d_A);
    errcode |= clSetKernelArg(clKernel, 2, sizeof(cl_mem), (void *)&d_B);
-   errcode |= clSetKernelArg(clKernel, 3, sizeof(int), (void *)&wA);
-   errcode |= clSetKernelArg(clKernel, 4, sizeof(int), (void *)&wC);
+   errcode |= clSetKernelArg(clKernel, 3, sizeof(cl_mem), (void *)&d_BL);
+   errcode |= clSetKernelArg(clKernel, 4, sizeof(int), (void *)&wA);
+   errcode |= clSetKernelArg(clKernel, 5, sizeof(int), (void *)&wC);
+   errcode |= clSetKernelArg(clKernel, 6, sizeof(int), (void *)&BlockSize);
+   errcode |= clSetKernelArg(clKernel, 7, sizeof(int), (void *)&TileSize);
+   errcode |= clSetKernelArg(clKernel, 8, sizeof(int), (void *)&TileNumByBlockEdge);
    OpenCL_CheckError(errcode, "clSetKernelArg");
  
    localWorkSize[0] = local;
@@ -188,10 +210,12 @@ void LaunchOpenCL()
    free(h_A);
    free(h_B);
    free(h_C);
+   free(h_BL);
  
    clReleaseMemObject(d_A);
    clReleaseMemObject(d_C);
    clReleaseMemObject(d_B);
+   clReleaseMemObject(d_BL);
  
    clReleaseContext(clContext);
    clReleaseKernel(clKernel);
