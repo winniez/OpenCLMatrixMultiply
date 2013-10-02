@@ -2,6 +2,11 @@
 OpenCL Exercise: Matrix Multiplication
 *************************************************************************/
 
+/* 2013/09/30 
+ * Set TileSize same as block size to skip or load entire block
+ * Xinying Zeng
+*/
+
 // Standard headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,15 +24,16 @@ OpenCL Exercise: Matrix Multiplication
 
 
 // Multiply two matrices A * B = C
-#define WA 32
-#define HA 32
-#define WB 32
+#define WA 64
+#define HA 64
+#define WB 64
 #define HB WA
 #define WC WB
 #define HC HA
 #define BLOCKSIZE 16
-#define TILESIZE 8 
-#define SKIP 4
+#define TILESIZE 16 
+#define SKIP 2
+#define PERCENTAGE 0.0
 /////////////////////////////////////////////////////////
 // Program main
 /////////////////////////////////////////////////////////
@@ -51,10 +57,14 @@ void PrintEventInfo(cl_event evt)
 
    error = clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_SUBMIT, sizeof(cl_ulong), &submitted, NULL);
    OpenCL_CheckError(error, "clGetEventProfilingInfo Error");
-
+   /*
    printf("submit->queued: %f ms\n", (submitted-queued)*1e-6);
    printf("queued->start: %f ms\n",  (cl_start_time-submitted)*1e-6);
    printf("start->end: %f ms\n",     (cl_end_time-cl_start_time)*1e-6);
+   */
+   printf("%d, %d, %f \n", WA, BLOCKSIZE, PERCENTAGE);
+   printf("%f,%f,%f \n", (submitted-queued)*1e-6, (cl_start_time-submitted)*1e-6, (cl_end_time-cl_start_time)*1e-6); 
+
 }
  
 void LaunchOpenCL()
@@ -66,9 +76,11 @@ void LaunchOpenCL()
    unsigned int BlockSize = BLOCKSIZE;
    unsigned int BlockNumByEdge = WA / BlockSize;
    unsigned int BlockNum = BlockNumByEdge * BlockNumByEdge;
+   /*
    unsigned int TileSize = TILESIZE;
    unsigned int TileNumByBlockEdge = BlockSize / TileSize;
    unsigned int TileNumByBlock = TileNumByBlockEdge * TileNumByBlockEdge;
+   */
 
    // 1. allocate host memory for matrices A and B
    unsigned int size_A = WA * HA;
@@ -80,7 +92,7 @@ void LaunchOpenCL()
    float* h_B = (float*) malloc(mem_size_B);
    
    // allocate host memory for mask matrix
-   unsigned int size_BL = BlockNum * TileNumByBlock;
+   unsigned int size_BL = BlockNumByEdge * BlockNumByEdge;
    unsigned int mem_size_BL = sizeof(int) * size_BL;
    int* h_BL = (int*)malloc(mem_size_BL);
 
@@ -88,8 +100,16 @@ void LaunchOpenCL()
    // 2. initialize host memory
    InitArrayFloat(h_A, size_A);
    InitArrayFloat(h_B, size_B);
-   unsigned int skipstep = SKIP;
-   InitBinaryMaskArraySkipN(h_BL, size_BL, skipstep);
+   float skip_percentage = PERCENTAGE;
+   InitBinaryMaskArrayPercentile(h_BL, size_BL, skip_percentage);
+   /*
+   int x;
+   for (x = 0; x < size_BL; x++)
+   {printf("%d \t", h_BL[x]);}
+   */
+   //printf("mask: %s", h_BL);
+   // unsigned int skipstep = SKIP;
+   //InitBinaryMaskArraySkipN(h_BL, size_BL, skipstep);
 
    // 4. allocate host memory for the result C
    unsigned int size_C = WC * HC;
@@ -182,14 +202,14 @@ void LaunchOpenCL()
    errcode |= clSetKernelArg(clKernel, 4, sizeof(int), (void *)&wA);
    errcode |= clSetKernelArg(clKernel, 5, sizeof(int), (void *)&wC);
    errcode |= clSetKernelArg(clKernel, 6, sizeof(int), (void *)&BlockSize);
-   errcode |= clSetKernelArg(clKernel, 7, sizeof(int), (void *)&TileSize);
-   errcode |= clSetKernelArg(clKernel, 8, sizeof(int), (void *)&TileNumByBlockEdge);
+   //errcode |= clSetKernelArg(clKernel, 7, sizeof(int), (void *)&TileSize);
+   //errcode |= clSetKernelArg(clKernel, 8, sizeof(int), (void *)&TileNumByBlockEdge);
    OpenCL_CheckError(errcode, "clSetKernelArg");
  
-   localWorkSize[0] = local;
-   localWorkSize[1] = local;
-   globalWorkSize[0] = global;
-   globalWorkSize[1] = global;
+   localWorkSize[0] = BLOCKSIZE;
+   localWorkSize[1] = BLOCKSIZE;
+   globalWorkSize[0] = WA;
+   globalWorkSize[1] = WA;
  
    cl_event             event;
    errcode = clEnqueueNDRangeKernel(clCommandQueue, 
