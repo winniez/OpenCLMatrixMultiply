@@ -34,7 +34,7 @@ def printResults(allResults, filename="results.txt"):
 	for key in sortedKeys:
 		line.append("\t%.4f" % allResults[key])
 		outfile.write("".join(line) + "\n")
-		outfile.close()
+	outfile.close()
 
 if __name__=="__main__":
 	if "-h" in sys.argv:
