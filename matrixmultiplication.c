@@ -42,7 +42,7 @@ OpenCL Exercise: Matrix Multiplication
 //
 
 
-void PrintEventInfo(cl_event evt)
+void PrintEventInfo(cl_event evt, float actualPercentage, int id)
 {
    cl_int error;
    cl_ulong cl_start_time, cl_end_time, queued, submitted;
@@ -63,7 +63,7 @@ void PrintEventInfo(cl_event evt)
    printf("queued->start: %f ms\n",  (cl_start_time-submitted)*1e-6);
    printf("start->end: %f ms\n",     (cl_end_time-cl_start_time)*1e-6);
    */
-   printf("%d,%d,%f,", WA, BLOCKSIZE, PERCENTAGE);
+   printf("%d,%d,%d,%f,%f,", WA, BLOCKSIZE, id, PERCENTAGE, actualPercentage);
    printf("%f,%f,%f\n", (submitted-queued)*1e-6, (cl_start_time-submitted)*1e-6, (cl_end_time-cl_start_time)*1e-6); 
 
 }
@@ -102,7 +102,8 @@ void LaunchOpenCL()
    InitArrayFloat(h_A, size_A);
    InitArrayFloat(h_B, size_B);
    float skip_percentage = PERCENTAGE;
-   InitBinaryMaskArrayPercentile(h_BL, size_BL, skip_percentage);
+   float actualPercentage;
+   InitBinaryMaskArrayPercentile(h_BL, size_BL, skip_percentage, &actualPercentage);
    /*
    int x;
    for (x = 0; x < size_BL; x++)
@@ -219,7 +220,22 @@ void LaunchOpenCL()
    errcode =  clWaitForEvents(1, &event);
    OpenCL_CheckError(errcode, "clEnqueueNDRangeKernel");
     
-   PrintEventInfo(event);
+   PrintEventInfo(event, actualPercentage, (int) 1);
+
+   errcode = clEnqueueNDRangeKernel(clCommandQueue,
+   		clKernel, 2, NULL, globalWorkSize,
+		localWorkSize, 0, NULL, &event);
+   errcode =  clWaitForEvents(1, &event);
+   OpenCL_CheckError(errcode, "clEnqueueNDRangeKernel");
+
+   PrintEventInfo(event, actualPercentage, (int) 2);
+
+   errcode = clEnqueueNDRangeKernel(clCommandQueue,
+   		clKernel, 2, NULL, globalWorkSize,
+		localWorkSize, 0, NULL, &event);
+   errcode =  clWaitForEvents(1, &event);
+   OpenCL_CheckError(errcode, "clEnqueueNDRangeKernel");
+   PrintEventInfo(event, actualPercentage, (int)3);
 
    // 8. Retrieve result from device
    errcode = clEnqueueReadBuffer(clCommandQueue, 

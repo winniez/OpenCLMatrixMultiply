@@ -10,7 +10,7 @@ def runtest(N, B, p, outfile):
 	os.system(compileCmd % (N, B, p))
 
 	#p = re.compile(" INFO: Wall time for [a-zA-Z_]+ = ([0-9]+.?[0-9]*)")
-	p = re.compile("(\d+),(\d+),(\d+\.\d*),(\d+\.\d*),(\d+\.\d*),(\d+\.\d*)")
+	p = re.compile("(\d+),(\d+),(\d+),(\d+\.\d*),(\d+\.\d*),(\d+\.\d*),(\d+\.\d*),(\d+\.\d*)")
 	runtimes = []
 	proc = subprocess.Popen(execCmd, shell=True, bufsize=256, stdout=subprocess.PIPE)
 	for line in proc.stdout:
@@ -40,7 +40,7 @@ if __name__=="__main__":
 	if "-h" in sys.argv:
 		print """usage: ./runtests.py """
 		sys.exit(-1)
-	rangeN = [256, 512, 1024, 2048, 4096]
+	rangeN = [256, 512, 1024, 2048, 2560, 3072, 3584, 4096]
 	rangeB = [8, 16]
 	rangeP = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 	allResults = {}

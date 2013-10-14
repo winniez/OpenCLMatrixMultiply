@@ -63,9 +63,10 @@ void InitArrayFloat(float *Data, int Size)
     }
 }
 
-void InitBinaryMaskArrayPercentile(int *Data, int Size, float percentile)
+void InitBinaryMaskArrayPercentile(int *Data, int Size, float percentile, float* actualPercentile)
 {
     int i;
+    float sum = 0;
     float Scale = 1.0f / (float) RAND_MAX;
     for (i = 0; i < Size; ++i)
     {
@@ -73,7 +74,9 @@ void InitBinaryMaskArrayPercentile(int *Data, int Size, float percentile)
 	{Data[i] = 1;} 
 	else
 	{Data[i] = 0;}
+	sum += Data[i];
     }
+    *actualPercentile = sum / (float) Size;
 }
 
 void InitBinaryMaskArraySkipN(int *Data, int Size, int step)

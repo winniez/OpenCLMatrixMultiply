@@ -1,7 +1,7 @@
 UTILS =
 CC = cc
 CFLAGS = -Wall -Wno-comment -Os -std=gnu99
-LAB_OPENCL_INC=/opt/AMDAPP/include/
+LAB_OPENCL_INC=/home/xinying/sdk/OpenCL/common/inc/CL #/opt/AMDAPP/include/
 
 TARGET = matrixmultiplication
 
