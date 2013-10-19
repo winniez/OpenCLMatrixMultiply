@@ -1,7 +1,7 @@
 // Matrix multiplication: C = A * B.
  
 // Thread block size
-#define BLOCK_SIZE 16
+// BLOCK_SIZE  must be defined at runtime compile time
   
 //////////////////////////////////////////////////////
 //! Matrix multiplication on the device: C = A * B
@@ -26,7 +26,7 @@ matrixMul(__global float* C,
     int ty = get_local_id(1);
 
     float Csub = 0;
- 
+
     // Index of the first sub-matrix of A processed 
     // by the block
     int aBegin = wA * BlockSize * by;
@@ -102,7 +102,7 @@ matrixMul(__global float* C,
 */	
  
     }
- 
+
     // Write the block sub-matrix to device memory;
     // each thread writes one element
     int c = wB * BLOCK_SIZE * by + BLOCK_SIZE * bx;

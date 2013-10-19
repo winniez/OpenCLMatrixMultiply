@@ -158,9 +158,9 @@ void LaunchOpenCL()
   
    // Setup device memory
    d_C = clCreateBuffer(clContext, CL_MEM_READ_WRITE, mem_size_A, NULL, &errcode);
-   d_A = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &errcode);
-   d_B = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &errcode);
-   d_BL = clCreateBuffer(clContext, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, mem_size_BL, h_BL, &errcode);
+   d_A = clCreateBuffer(clContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_A, h_A, &errcode);
+   d_B = clCreateBuffer(clContext, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, mem_size_B, h_B, &errcode);
+   d_BL = clCreateBuffer(clContext, CL_MEM_READ_ONLY| CL_MEM_COPY_HOST_PTR, mem_size_BL, h_BL, &errcode);
    // 6. Load and build OpenCL kernel
    // Open the ptx file and load it
    // into a char* buffer
@@ -171,12 +171,16 @@ void LaunchOpenCL()
    if(!source)
       FATAL("Error: Failed to load compute program from file!\n",0);
 
+   char clOptions[128]; 
+   // propagate the LENGTH preprocessor symbol to the kernel compilation
+   sprintf(clOptions, "-DBLOCK_SIZE=%d", BLOCKSIZE);
+
    // Create the compute program from the source buffer
    if(!(clProgram = clCreateProgramWithSource(clContext, 1, (const char **) & source, NULL, &errcode)))
         FATAL("Failed to create compute program!",errcode);
 
    // Build the program executable
-   errcode = clBuildProgram(clProgram, 0, NULL, NULL, NULL, NULL);
+   errcode = clBuildProgram(clProgram, 0, NULL, clOptions, NULL, NULL);
    if (errcode != CL_SUCCESS)
    {
         size_t len=2048;

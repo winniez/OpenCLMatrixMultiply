@@ -41,7 +41,7 @@ if __name__=="__main__":
 		print """usage: ./runtests.py """
 		sys.exit(-1)
 	rangeN = [256, 512, 1024, 2048, 2560, 3072, 3584, 4096]
-	rangeB = [8, 16]
+	rangeB = [8, 16, 32]
 	rangeP = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 	allResults = {}
 	filename="results.txt"
@@ -49,6 +49,7 @@ if __name__=="__main__":
 	for N in rangeN:
 		for  B in rangeB:
 			for P in rangeP:
+				print '%d, %d, %f' % (N, B, P)
 				runtest(N, B, P, outfile)
 
 
